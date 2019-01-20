@@ -1,0 +1,134 @@
+<html>
+<head>
+  <script src="trainingdata.js"></script>
+</head>
+<body>
+
+  <h1>LeapMotion ASL Translator</h1>
+  <div id="output"></div>
+  <div id="placehere" />
+
+  <button onclick="add_sample()">Record position</button>
+
+  <button onclick="download()">Download</button>
+
+  <input id="scriptBox" type="text" />
+
+  <p id="demo"></p>
+  <p id="registered">Registered dict:</p>
+
+</body>
+
+<script src="lib/leap-0.6.4.js"></script>
+<script src="lib/brain-0.6.3.min.js"></script>
+<script src="lib/underscore.js"></script>
+<script type="text/javascript">
+
+
+var output = document.getElementById('output');
+var frameString = "";
+var leftHand, rightHand;
+var options = { enableGestures: true , loopWhileDisconnected: false};
+var elem = document.createElement("img");
+var sentence = [""];
+//var net = new brain.NeuralNetwork();
+var shouldScan = true;
+
+var pitch_roll_yaw_data;
+
+var dict = [];
+
+function bothHands(frame) {
+
+  leftHand = 0;
+  rightHand = 0;
+  if(frame.hands[0])
+    if(frame.hands[0].type == 'left')
+      leftHand = frame.hands[0];
+    else
+      rightHand = frame.hands[0];
+  if(frame.hands[1])
+    if(frame.hands[1].type == 'right')
+      rightHand = frame.hands[1];
+    else
+      leftHand = frame.hands[1];
+
+  return leftHand || rightHand;
+
+  /*
+  if (frame.hands[0] && frame.hands[1]) {
+    if (frame.hands[0].type == 'left') {
+      leftHand = frame.hands[0];
+      rightHand = frame.hands[1];
+    } else {
+      rightHand = frame.hands[0];
+      leftHand = frame.hands[1];
+    }
+  }
+
+  return leftHand && rightHand;
+  */
+}
+
+function add_sample(){
+  console.log('here')
+
+  var pitch_roll_yaw_data_string = JSON.stringify(pitch_roll_yaw_data);
+  dict.push(pitch_roll_yaw_data);
+  document.getElementById("demo").innerHTML = pitch_roll_yaw_data_string;
+
+  var dict_string = JSON.stringify(dict);
+  document.getElementById("registered").innerHTML = dict_string;
+
+}
+
+
+
+function download(){
+  //content, fileName, contentType) {
+  var dict_string = JSON.stringify(dict);
+  content = dict_string;
+  fileName = 'json.txt';
+  contentType = 'text/plain';
+
+  var a = document.createElement("a");
+  var file = new Blob([content], {type: contentType});
+  a.href = URL.createObjectURL(file);
+  a.download = fileName;
+  a.click();
+}
+
+var controller = Leap.loop(options, function(frame) {
+
+          frameString = "";
+          elem.src = "";
+
+         if (bothHands(frame) && shouldScan) {
+
+          if(leftHand && rightHand){
+            pitch_roll_yaw_data = {lx: leftHand.pitch(), ly: leftHand.roll(),
+            lz: leftHand.yaw(), rx: rightHand.pitch(),
+            ry: rightHand.roll(), rz: rightHand.yaw(), label: document.getElementById("scriptBox").value};
+          } else{
+            if(leftHand){
+              pitch_roll_yaw_data = {lx: leftHand.pitch(), ly: leftHand.roll(),
+              lz: leftHand.yaw(), rx: 0,
+              ry: 0, rz: 0, label: document.getElementById("scriptBox").value};
+            }
+
+            if(rightHand){
+              pitch_roll_yaw_data = {lx: 0, ly: 0,
+              lz: 0, rx: rightHand.pitch(),
+              ry: rightHand.roll(), rz: rightHand.yaw(), label: document.getElementById("scriptBox").value};
+            }
+          }
+
+          var pitch_roll_yaw_data_string = JSON.stringify(pitch_roll_yaw_data);
+          document.getElementById("demo").innerHTML = pitch_roll_yaw_data_string;
+        }
+      });
+
+
+</script>
+
+</html>
